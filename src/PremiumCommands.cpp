@@ -151,7 +151,7 @@ public:
         int premium_level = GetAccountPremiumLevel(accountID);
         if (!premium_level)
         {
-            (ChatHandler(handler->GetSession())).PSendSysMessage("%'s account doesn't have premium level.", playerName);
+            (ChatHandler(handler->GetSession())).PSendSysMessage("%s's account doesn't have premium level.", playerName);
             handler->SetSentErrorMessage(true);
             return false;
         }
@@ -249,9 +249,9 @@ public:
 
         if (!hasPremiumLevel)
         {
-            QueryResult result = CharacterDatabase.PQuery("INSERT INTO premium_character (character_id, premium_level) VALUES (%i, %i)", GUID_LOPART(guid), premiumLevel);
-
-            if (!result)
+            CharacterDatabase.PQuery("INSERT INTO premium_character (character_id, premium_level) VALUES (%i, %i)", GUID_LOPART(guid), premiumLevel);
+            hasPremiumLevel = GetCharacterPremiumLevel(guid);
+            if (!hasPremiumLevel)
                 return false;
 
             return true;
@@ -267,9 +267,9 @@ public:
 
         if (hasPremiumLevel)
         {
-            QueryResult result = CharacterDatabase.PQuery("DELETE FROM premium_character WHERE character_id = %i", GUID_LOPART(guid));
-
-            if (!result)
+            CharacterDatabase.PQuery("DELETE FROM premium_character WHERE character_id = %i", GUID_LOPART(guid));
+            int hasPremiumLevel = GetCharacterPremiumLevel(guid);
+            if (!hasPremiumLevel)
                 return false;
 
             return true;
@@ -296,9 +296,10 @@ public:
 
         if (!hasPremiumLevel)
         {
-            QueryResult result = LoginDatabase.PQuery("INSERT INTO premium_account (account_id, premium_level) VALUES (%i, %i)", accountID, premiumLevel);
+            LoginDatabase.PQuery("INSERT INTO premium_account (account_id, premium_level) VALUES (%i, %i)", accountID, premiumLevel);
+            hasPremiumLevel = GetAccountPremiumLevel(accountID);
 
-            if (!result)
+            if (!hasPremiumLevel)
                 return false;
 
             return true;
@@ -313,9 +314,9 @@ public:
         int hasPremiumLevel = GetAccountPremiumLevel(accountID);
         if (hasPremiumLevel)
         {
-            QueryResult result = LoginDatabase.PQuery("DELETE FROM premium_account WHERE account_id = %i", accountID);
-
-            if (!result)
+            LoginDatabase.PQuery("DELETE FROM premium_account WHERE account_id = %i", accountID);
+            hasPremiumLevel = GetAccountPremiumLevel(accountID);
+            if (!hasPremiumLevel)
                 return false;
 
             return true;
