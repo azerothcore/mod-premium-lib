@@ -270,9 +270,9 @@ public:
             CharacterDatabase.PQuery("DELETE FROM premium_character WHERE character_id = %i", GUID_LOPART(guid));
             int hasPremiumLevel = GetCharacterPremiumLevel(guid);
             if (!hasPremiumLevel)
-                return false;
+                return true;
 
-            return true;
+            return false;
         }
         else
             return false;
@@ -317,9 +317,9 @@ public:
             LoginDatabase.PQuery("DELETE FROM premium_account WHERE account_id = %i", accountID);
             hasPremiumLevel = GetAccountPremiumLevel(accountID);
             if (!hasPremiumLevel)
-                return false;
+                return true;
 
-            return true;
+            return false;
         }
         else
             return false;
