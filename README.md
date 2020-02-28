@@ -8,14 +8,15 @@ Currently only a few Getters and Setters have been implemented but more can be a
 ## How to use ingame
 
 In-game there are commands for accounts and characters
-
-- .premium account info
-- .premium account create 2 (Insert a number)
-- .premium account info
-- .premium character info
-- .premium character create 2 (Insert a number)
-- .premium character delete
-
+```
+.premium account info
+.premium account create 2 (Insert a number)
+.premium account info
+.premium character info
+.premium character create 2 (Insert a number)
+.premium character delete
+```
+---
 - premium info of both account and character should give the premium level for each one. If there isn't a premium level to any, an error message will be delivered.
 - premium create inserts on the database for characters and accounts acordingly. Auth stores premium accounts and characters stores premium characters. If you try to override a character with a new premium level, the gamemaster will be asked to delete first, then insert. The same will happen for account.
 - premium delete will, as the command so specifies, remove the premium level for said character or account. If there's no level set, a message will clarify it.
