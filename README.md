@@ -1,4 +1,4 @@
-# SKELETON - Module template
+# Premium_lib
 
 [English](README.md) | [Español](README_ES.md)
 
