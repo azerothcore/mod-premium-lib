@@ -16,6 +16,12 @@ In-game there are commands for accounts and characters
 - .premium character create 2 (Insert a number)
 - .premium character delete
 
+- premium info of both account and character should give the premium level for each one. If there isn't a premium level to any, an error message will be delivered.
+- premium create inserts on the database for characters and accounts acordingly. Auth stores premium accounts and characters stores premium characters. If you try to override a character with a new premium level, the gamemaster will be asked to delete first, then insert. The same will happen for account.
+- premium delete will, as the command so specifies, remove the premium level for said character or account. If there's no level set, a message will clarify it.
+
+**Note:** To set an account premium only needs to target a player and the script will look for that player's account so the only parameters that we need to send to the console are the premium levels when creating.
+
 ## Requirements
 
 This module doesn't require anything other than a compiled version of Azerothcore. It can however serve as a requirement for other modules.
