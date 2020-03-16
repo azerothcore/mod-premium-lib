@@ -43,5 +43,6 @@ If you need to change the module configuration, go to your server configuration 
 
 ## Credits
 
-* [Gengar shadowball](https://github.com/gengarshadowball)
+* [Gengar shadowball](https://github.com/gengarshadowball) - Module author
+* [Barbz](https://github.com/BarbzYHOOL) - Original idea
 * AzerothCore: [repository](https://github.com/azerothcore) - [website](http://azerothcore.org/) - [discord chat community](https://discord.gg/PaqQRkd)
