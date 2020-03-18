@@ -9,12 +9,12 @@ Currently only a few Getters and Setters have been implemented but more can be a
 
 In-game there are commands for accounts and characters
 ```
-.premium account info
-.premium account create 2 (Insert a number)
-.premium account info
-.premium character info
-.premium character create 2 (Insert a number)
-.premium character delete
+.premium account info (with a character selected) or .premium account info accountName
+.premium account create 2 (with a character selected) or .premium account create accountName premiumLevel
+.premium account delete (with a character selected) or .premium account delete accountName
+.premium character info (with a character selected) or .premium character info characterName
+.premium character create 2 (with a character selected) or .premium character create characterName premiumLevel
+.premium character delete (with a character selected) or .premium character delete characterName
 ```
 ---
 - premium info of both account and character should give the premium level for each one. If there isn't a premium level to any, an error message will be delivered.
