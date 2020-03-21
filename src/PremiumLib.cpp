@@ -22,7 +22,7 @@
 
 PremiumLibData PremiumLibManager::GetAccountPremiumLevel(uint64 accountID)
 {
-    QueryResult result = LoginDatabase.PQuery("SELECT premium_level, duration, FROM_UNIXTIME(duration) FROM premium_account WHERE account_id = %u", accountID);
+    QueryResult result = LoginDatabase.PQuery("SELECT premium_level, expiration_date, FROM_UNIXTIME(expiration_date) FROM premium_account WHERE account_id = %u", accountID);
 
     if (!result)
         return PremiumLibData();
@@ -36,7 +36,7 @@ PremiumLibData PremiumLibManager::GetAccountPremiumLevel(uint64 accountID)
 
 PremiumLibData PremiumLibManager::GetCharacterPremiumLevel(uint64 guid)
 {
-    QueryResult result = CharacterDatabase.PQuery("SELECT premium_level, duration, FROM_UNIXTIME(duration) FROM premium_character WHERE character_id = %u", GUID_LOPART(guid));
+    QueryResult result = CharacterDatabase.PQuery("SELECT premium_level, expiration_date, FROM_UNIXTIME(expiration_date) FROM premium_character WHERE character_id = %u", GUID_LOPART(guid));
 
     if (!result)
         return PremiumLibData();
@@ -56,7 +56,7 @@ bool PremiumLibManager::CreateAccountPremiumLevel(uint64 accountID, int8 premium
     if (!data.premiumLevel)
     {
         uint32 expirationDateUnixtime = duration != 0 ? time(0) + duration * DAY : 0;
-        LoginDatabase.PQuery("INSERT INTO premium_account (account_id, premium_level, duration) VALUES (%u, %i, %u)", accountID, premiumLevel, expirationDateUnixtime);
+        LoginDatabase.PQuery("INSERT INTO premium_account (account_id, premium_level, expiration_date) VALUES (%u, %i, %u)", accountID, premiumLevel, expirationDateUnixtime);
         return true;
     }
 
@@ -71,7 +71,7 @@ bool PremiumLibManager::CreateCharacterPremiumLevel(uint64 guid, int8 premiumLev
     if (!data.premiumLevel)
     {
         uint32 expirationDateUnixtime = duration != 0 ? time(0) + duration * DAY : 0;
-        CharacterDatabase.PQuery("INSERT INTO premium_character (character_id, premium_level, duration) VALUES (%u, %i, %u)", GUID_LOPART(guid), premiumLevel, expirationDateUnixtime);
+        CharacterDatabase.PQuery("INSERT INTO premium_character (character_id, premium_level, expiration_date) VALUES (%u, %i, %u)", GUID_LOPART(guid), premiumLevel, expirationDateUnixtime);
         return true;
     }
 
