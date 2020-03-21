@@ -1,1 +1,1 @@
-void AddPremiumCommandsScripts();
+void AddPremiumLibScripts();
