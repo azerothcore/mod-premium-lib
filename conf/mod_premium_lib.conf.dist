@@ -1,16 +1,8 @@
 [worldserver]
 
 #
-# Expires:
-# Set it to 1 if you want the vip to expire.
-# Default: 0
-#
-
-PremiumLib.Expires = 0
-
-#
 # Duration:
-# How many days the player will be premium. This will work only if PremiumLib.Expires is set to 1.
+# How many days the player will be premium. If set to 0, the vip will never expire.
 # Default: 30
 #
 

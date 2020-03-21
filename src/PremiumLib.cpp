@@ -12,9 +12,99 @@
 #include "LoginDatabase.h"
 #include "DatabaseWorkerPool.h"
 #include "MySQLConnection.h"
+#include "PremiumLib.h"
 
-int8 duration;
-bool expires;
+/* Premium character interaction.
+     * These functions will allow modules to access the new generic
+     * premium tables designed to help modules that interact with
+     * players and characters without the need to create other tables.
+*/
+
+PremiumLibData PremiumLibManager::GetAccountPremiumLevel(uint64 accountID)
+{
+    QueryResult result = LoginDatabase.PQuery("SELECT premium_level, duration, FROM_UNIXTIME(duration) FROM premium_account WHERE account_id = %u", accountID);
+
+    if (!result)
+        return PremiumLibData();
+
+    PremiumLibData data;
+    data.premiumLevel = (*result)[0].GetInt8();
+    data.expirationDateUnixtime = (*result)[1].GetInt32();
+    data.expirationDate = (*result)[2].GetCString();
+    return data;
+}
+
+PremiumLibData PremiumLibManager::GetCharacterPremiumLevel(uint64 guid)
+{
+    QueryResult result = CharacterDatabase.PQuery("SELECT premium_level, duration, FROM_UNIXTIME(duration) FROM premium_character WHERE character_id = %u", GUID_LOPART(guid));
+
+    if (!result)
+        return PremiumLibData();
+
+    PremiumLibData data;
+    data.premiumLevel = (*result)[0].GetInt8();
+    data.expirationDateUnixtime = (*result)[1].GetInt32();
+    data.expirationDate = (*result)[2].GetCString();
+    return data;
+}
+
+bool PremiumLibManager::CreateAccountPremiumLevel(uint64 accountID, int8 premiumLevel)
+{
+    // Validate if account to be inserted already has a premium level
+    PremiumLibData data = GetAccountPremiumLevel(accountID);
+
+    if (!data.premiumLevel)
+    {
+        uint32 expirationDateUnixtime = duration != 0 ? time(0) + duration * DAY : 0;
+        LoginDatabase.PQuery("INSERT INTO premium_account (account_id, premium_level, duration) VALUES (%u, %i, %u)", accountID, premiumLevel, expirationDateUnixtime);
+        return true;
+    }
+
+    return false;
+}
+
+bool PremiumLibManager::CreateCharacterPremiumLevel(uint64 guid, int8 premiumLevel)
+{
+    // Validate if character to be inserted already has a premium level
+    PremiumLibData data = GetCharacterPremiumLevel(guid);
+
+    if (!data.premiumLevel)
+    {
+        uint32 expirationDateUnixtime = duration != 0 ? time(0) + duration * DAY : 0;
+        CharacterDatabase.PQuery("INSERT INTO premium_character (character_id, premium_level, duration) VALUES (%u, %i, %u)", GUID_LOPART(guid), premiumLevel, expirationDateUnixtime);
+        return true;
+    }
+
+    return false;
+}
+
+bool PremiumLibManager::DeleteAccountPremiumLevel(uint64 accountID)
+{
+    // Validate if account to be removed has a premium level
+    PremiumLibData data = GetAccountPremiumLevel(accountID);
+
+    if (data.premiumLevel)
+    {
+        LoginDatabase.PQuery("DELETE FROM premium_account WHERE account_id = %i", accountID);
+        return true;
+    }
+
+    return false;
+}
+
+bool PremiumLibManager::DeleteCharacterPremiumLevel(uint64 guid)
+{
+    // Validate if character to be removed has a premium level
+    PremiumLibData data = GetCharacterPremiumLevel(guid);
+
+    if (data.premiumLevel)
+    {
+        CharacterDatabase.PQuery("DELETE FROM premium_character WHERE character_id = %u", GUID_LOPART(guid));
+        return true;
+    }
+
+    return false;
+}
 
 class PremiumCommands : public CommandScript
 {
@@ -53,7 +143,6 @@ public:
         Player* target = nullptr;
         std::string playerName;
         uint64 playerGUID;
-        std::string expirationDate;
 
         if (!handler->extractPlayerTarget((char*)args, &target, &playerGUID, &playerName))
             return false;
@@ -62,15 +151,15 @@ public:
             if (handler->HasLowerSecurity(target, 0))
                 return false;
 
-        int premium_level = GetCharacterPremiumLevel(playerGUID, expirationDate);
-        if (!premium_level)
+        PremiumLibData data = sPremiumLib->GetCharacterPremiumLevel(playerGUID);
+        if (!data.premiumLevel)
         {
             (ChatHandler(handler->GetSession())).PSendSysMessage("No premium level available for character %s.", playerName.c_str());
             handler->SetSentErrorMessage(true);
             return false;
         }
         else
-            (ChatHandler(handler->GetSession())).PSendSysMessage("Character %s premium level: %u, expires: %s.", playerName.c_str(), premium_level, expires ? expirationDate.c_str() : "Never");
+            (ChatHandler(handler->GetSession())).PSendSysMessage("Character %s premium level: %u, expires: %s.", playerName.c_str(), data.premiumLevel, sPremiumLib->duration != 0 ? data.expirationDate.c_str() : "Never");
 
         return true;
     }
@@ -111,9 +200,9 @@ public:
             if (handler->HasLowerSecurity(target, 0))
                 return false;
 
-        bool characterPremiumLevelAdded = CreateCharacterPremiumLevel(playerGUID, premiumLevel);
+        bool characterPremiumLevelAdded = sPremiumLib->CreateCharacterPremiumLevel(playerGUID, premiumLevel);
         if (characterPremiumLevelAdded)
-            (ChatHandler(handler->GetSession())).PSendSysMessage("Character %s created with premium level %u.", playerName.c_str(), premiumLevel);
+            (ChatHandler(handler->GetSession())).PSendSysMessage("Premium level %u added to character %s", premiumLevel, playerName.c_str());
         else
         {
             (ChatHandler(handler->GetSession())).PSendSysMessage("%s already has a premium level. Please remove it first.", playerName.c_str());
@@ -137,7 +226,7 @@ public:
             if (handler->HasLowerSecurity(target, 0))
                 return false;
 
-        bool characterPremiumDeleted = DeleteCharacterPremiumLevel(playerGUID);
+        bool characterPremiumDeleted = sPremiumLib->DeleteCharacterPremiumLevel(playerGUID);
         if (characterPremiumDeleted)
             (ChatHandler(handler->GetSession())).PSendSysMessage("Premium character %s deleted.", playerName.c_str());
         else
@@ -180,15 +269,15 @@ public:
         if (!AccountMgr::GetName(accountID, accountName))
             return false;
 
-        int premium_level = GetAccountPremiumLevel(accountID, expirationDate);
-        if (!premium_level)
+        PremiumLibData data = sPremiumLib->GetAccountPremiumLevel(accountID);
+        if (!data.premiumLevel)
         {
             (ChatHandler(handler->GetSession())).PSendSysMessage("Account %s doesn't have premium level.", accountName.c_str());
             handler->SetSentErrorMessage(true);
             return false;
         }
         else
-            (ChatHandler(handler->GetSession())).PSendSysMessage("Account %s premium level: %u, expires: %s.", accountName.c_str(), premium_level, expires ? expirationDate.c_str() : "Never");
+            (ChatHandler(handler->GetSession())).PSendSysMessage("Account %s premium level: %u, expires: %s.", accountName.c_str(), data.premiumLevel, sPremiumLib->duration != 0 ? data.expirationDate.c_str() : "Never");
 
         return true;
     }
@@ -229,7 +318,7 @@ public:
         if (playerAccount.empty())
             AccountMgr::GetName(accountID, playerAccount);
 
-        bool characterPremiumLevelAdded = CreateAccountPremiumLevel(accountID, premiumLevel);
+        bool characterPremiumLevelAdded = sPremiumLib->CreateAccountPremiumLevel(accountID, premiumLevel);
         if (characterPremiumLevelAdded)
             (ChatHandler(handler->GetSession())).PSendSysMessage("Account %s premium level set to: %u.", playerAccount.c_str(), premiumLevel);
         else
@@ -271,7 +360,7 @@ public:
         if (!AccountMgr::GetName(accountID, accountName))
             return false;
 
-        bool characterPremiumDeleted = DeleteAccountPremiumLevel(accountID);
+        bool characterPremiumDeleted = sPremiumLib->DeleteAccountPremiumLevel(accountID);
         if (characterPremiumDeleted)
             (ChatHandler(handler->GetSession())).PSendSysMessage("Premium account deleted for %s.", accountName.c_str());
         else
@@ -283,114 +372,6 @@ public:
 
         return true;
     }
-
-    /* Premium character interaction.
-     * These functions will allow modules to access the new generic
-     * premium tables designed to help modules that interact with
-     * players and characters without the need to create other tables.
-     */
-    static int8 GetCharacterPremiumLevel(uint64 guid, std::string& expirationDate)
-    {
-        QueryResult result = CharacterDatabase.PQuery("SELECT premium_level, FROM_UNIXTIME(duration) FROM premium_character WHERE character_id = %u", GUID_LOPART(guid));
-
-        if (!result)
-            return 0;
-
-        int8 premium_level = (*result)[0].GetInt8();
-        expirationDate = (*result)[1].GetCString();
-        return premium_level;
-    }
-
-
-    static bool CreateCharacterPremiumLevel(uint64 guid, int8 premiumLevel)
-    {
-        // Validate if character to be inserted already has a premium level
-        std::string expirationDate;
-        int hasPremiumLevel = GetCharacterPremiumLevel(guid, expirationDate);
-
-        if (!hasPremiumLevel)
-        {
-            uint32 expirationDayUnixtime = expires ? time(0) + duration * DAY : 0;
-            CharacterDatabase.PQuery("INSERT INTO premium_character (character_id, premium_level, duration) VALUES (%u, %i, %u)", GUID_LOPART(guid), premiumLevel, expirationDayUnixtime);
-            hasPremiumLevel = GetCharacterPremiumLevel(guid, expirationDate);
-            if (!hasPremiumLevel)
-                return false;
-
-            return true;
-        }
-        else
-            return false;
-    }
-
-    static bool DeleteCharacterPremiumLevel(uint64 guid)
-    {
-        // Validate if character to be removed has a premium level
-        std::string expirationDate;
-        int hasPremiumLevel = GetCharacterPremiumLevel(guid, expirationDate);
-
-        if (hasPremiumLevel)
-        {
-            CharacterDatabase.PQuery("DELETE FROM premium_character WHERE character_id = %u", GUID_LOPART(guid));
-            int hasPremiumLevel = GetCharacterPremiumLevel(guid, expirationDate);
-            if (!hasPremiumLevel)
-                return true;
-
-            return false;
-        }
-        else
-            return false;
-    }
-
-    static int8 GetAccountPremiumLevel(uint64 accountID, std::string& expirationDate)
-    {
-        QueryResult result = LoginDatabase.PQuery("SELECT premium_level, FROM_UNIXTIME(duration) FROM premium_account WHERE account_id = %u", accountID);
-
-        if (!result)
-            return false;
-
-        int8 account_premium_level = (*result)[0].GetInt8();
-        expirationDate = (*result)[1].GetCString();
-        return account_premium_level;
-    }
-
-    static bool CreateAccountPremiumLevel(uint64 accountID, int8 premiumLevel)
-    {
-        // Validate if account to be inserted already has a premium level
-        std::string expirationDate;
-        int hasPremiumLevel = GetAccountPremiumLevel(accountID, expirationDate);
-
-        if (!hasPremiumLevel)
-        {
-            uint32 expirationDayUnixtime = expires ? time(0) + duration * DAY : 0;
-            LoginDatabase.PQuery("INSERT INTO premium_account (account_id, premium_level, duration) VALUES (%u, %i, %u)", accountID, premiumLevel, expirationDayUnixtime);
-            hasPremiumLevel = GetAccountPremiumLevel(accountID, expirationDate);
-
-            if (!hasPremiumLevel)
-                return false;
-
-            return true;
-        }
-        else
-            return false;
-    }
-
-    static bool DeleteAccountPremiumLevel(uint64 accountID)
-    {
-        // Validate if account to be removed has a premium level
-        std::string expirationDate;
-        int hasPremiumLevel = GetAccountPremiumLevel(accountID, expirationDate);
-        if (hasPremiumLevel)
-        {
-            LoginDatabase.PQuery("DELETE FROM premium_account WHERE account_id = %i", accountID);
-            hasPremiumLevel = GetAccountPremiumLevel(accountID, expirationDate);
-            if (!hasPremiumLevel)
-                return true;
-
-            return false;
-        }
-        else
-            return false;
-    }  
 };
 
 class PremiumLibWorld : public WorldScript
@@ -412,15 +393,37 @@ public:
             sConfigMgr->LoadMore(cfg_def_file.c_str());
             sConfigMgr->LoadMore(cfg_file.c_str());
 
-            expires = sConfigMgr->GetBoolDefault("PremiumLib.Expires", false);
-            duration = sConfigMgr->GetIntDefault("PremiumLib.Duration", 30);
+            sPremiumLib->duration = sConfigMgr->GetIntDefault("PremiumLib.Duration", 30);
         }
     }
 };
 
-void AddPremiumCommandsScripts()
+class PremiumLibPlayer : public PlayerScript
+{
+public:
+    PremiumLibPlayer() : PlayerScript("PremiumLibPlayer") { }
+
+    // Remove expired premiums. We only do this OnLogin for performance and simplicity.
+    void OnLogin(Player* player) override
+    {
+        uint64 playerGUID = player->GetGUID();
+        uint32 accountID = player->GetSession()->GetAccountId();
+        PremiumLibData accData = sPremiumLib->GetAccountPremiumLevel(accountID);
+        time_t now = time(nullptr);
+
+        if (accData.premiumLevel && accData.expirationDateUnixtime != 0 && accData.expirationDateUnixtime <= now)
+            sPremiumLib->DeleteAccountPremiumLevel(accountID);
+
+        PremiumLibData charData = sPremiumLib->GetCharacterPremiumLevel(playerGUID);
+        if (charData.premiumLevel && charData.expirationDateUnixtime != 0 && charData.expirationDateUnixtime <= now)
+            sPremiumLib->DeleteCharacterPremiumLevel(playerGUID);
+    }
+};
+
+void AddPremiumLibScripts()
 {
     new PremiumCommands();
     new PremiumLibWorld();
+    new PremiumLibPlayer();
 }
 
