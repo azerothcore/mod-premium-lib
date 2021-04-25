@@ -44,7 +44,7 @@ public:
         };
         return premiumCommandTable;
     }
-    
+
     static bool HandlePremiumCharacterInfoCommand(ChatHandler* handler, const char* /*args*/)
     {
         Player* target = handler->getSelectedPlayer();
@@ -56,10 +56,10 @@ public:
             return false;
         }
 
-        if (handler->HasLowerSecurity(target, 0))
+        if (handler->HasLowerSecurity(target))
             return false;
 
-        int premium_level = GetCharacterPremiumLevel(target->GetGUIDLow());
+        int premium_level = GetCharacterPremiumLevel(target->GetGUID());
         //int premium_level = target->GetCharacterPremiumLevel(target->GetGUIDLow());
         if (!premium_level)
         {
@@ -90,10 +90,10 @@ public:
             return false;
         }
 
-        if (handler->HasLowerSecurity(target, 0))
+        if (handler->HasLowerSecurity(target))
             return false;
 
-        bool characterPremiumLevelAdded = CreateCharacterPremiumLevel(target->GetGUIDLow(), premiumLevel);
+        bool characterPremiumLevelAdded = CreateCharacterPremiumLevel(target->GetGUID(), premiumLevel);
         if (characterPremiumLevelAdded)
             (ChatHandler(handler->GetSession())).PSendSysMessage("Character created with premium level %u.", premiumLevel);
         else
@@ -117,10 +117,10 @@ public:
             return false;
         }
 
-        if (handler->HasLowerSecurity(target, 0))
+        if (handler->HasLowerSecurity(target))
             return false;
 
-        bool characterPremiumDeleted = DeleteCharacterPremiumLevel(target->GetGUIDLow());
+        bool characterPremiumDeleted = DeleteCharacterPremiumLevel(target->GetGUID());
         if (characterPremiumDeleted)
             (ChatHandler(handler->GetSession())).PSendSysMessage("Premium character deleted.");
         else
@@ -144,7 +144,7 @@ public:
             return false;
         }
 
-        if (handler->HasLowerSecurity(target, 0))
+        if (handler->HasLowerSecurity(target))
             return false;
 
         uint64 accountID = target->ToPlayer()->GetSession()->GetAccountId();
@@ -178,7 +178,7 @@ public:
             return false;
         }
 
-        if (handler->HasLowerSecurity(target, 0))
+        if (handler->HasLowerSecurity(target))
             return false;
 
         uint64 accountID = target->ToPlayer()->GetSession()->GetAccountId();
@@ -207,7 +207,7 @@ public:
             return false;
         }
 
-        if (handler->HasLowerSecurity(target, 0))
+        if (handler->HasLowerSecurity(target))
             return false;
 
         uint64 accountID = target->ToPlayer()->GetSession()->GetAccountId();
@@ -230,9 +230,9 @@ public:
      * premium tables designed to help modules that interact with
      * players and characters without the need to create other tables.
      */
-    static int8 GetCharacterPremiumLevel(uint64 guid)
+    static int8 GetCharacterPremiumLevel(ObjectGuid guid)
     {
-        QueryResult result = CharacterDatabase.PQuery("SELECT premium_level FROM premium_character WHERE character_id = %i", GUID_LOPART(guid));
+        QueryResult result = CharacterDatabase.PQuery("SELECT premium_level FROM premium_character WHERE character_id = %i", guid.GetCounter());
 
         if (!result)
             return 0;
@@ -242,14 +242,14 @@ public:
     }
 
 
-    static bool CreateCharacterPremiumLevel(uint64 guid, int8 premiumLevel)
+    static bool CreateCharacterPremiumLevel(ObjectGuid guid, int8 premiumLevel)
     {
         // Validate if character to be inserted already has a premium level
         int hasPremiumLevel = GetCharacterPremiumLevel(guid);
 
         if (!hasPremiumLevel)
         {
-            CharacterDatabase.PQuery("INSERT INTO premium_character (character_id, premium_level) VALUES (%i, %i)", GUID_LOPART(guid), premiumLevel);
+            CharacterDatabase.PQuery("INSERT INTO premium_character (character_id, premium_level) VALUES (%i, %i)", guid.GetCounter(), premiumLevel);
             hasPremiumLevel = GetCharacterPremiumLevel(guid);
             if (!hasPremiumLevel)
                 return false;
@@ -260,14 +260,14 @@ public:
             return false;
     }
 
-    static bool DeleteCharacterPremiumLevel(uint64 guid)
+    static bool DeleteCharacterPremiumLevel(ObjectGuid guid)
     {
         // Validate if character to be removed has a premium level
         int hasPremiumLevel = GetCharacterPremiumLevel(guid);
 
         if (hasPremiumLevel)
         {
-            CharacterDatabase.PQuery("DELETE FROM premium_character WHERE character_id = %i", GUID_LOPART(guid));
+            CharacterDatabase.PQuery("DELETE FROM premium_character WHERE character_id = %i", guid.GetCounter());
             int hasPremiumLevel = GetCharacterPremiumLevel(guid);
             if (!hasPremiumLevel)
                 return true;
@@ -323,7 +323,7 @@ public:
         }
         else
             return false;
-    }  
+    }
 };
 
 void AddPremiumCommandsScripts() {
