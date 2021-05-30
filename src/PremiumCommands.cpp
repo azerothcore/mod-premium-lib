@@ -48,7 +48,7 @@ public:
     static bool HandlePremiumCharacterInfoCommand(ChatHandler* handler, const char* /*args*/)
     {
         Player* target = handler->getSelectedPlayer();
-        string playerName = target->GetName().c_str();
+        std::string playerName = target->GetName().c_str();
         if (!target)
         {
             (ChatHandler(handler->GetSession())).PSendSysMessage(LANG_NO_CHAR_SELECTED);
@@ -82,7 +82,7 @@ public:
         int premiumLevel = atoi((char*)args);
 
         Player* target = handler->getSelectedPlayer();
-        string playerName = target->GetName().c_str();
+        std::string playerName = target->GetName().c_str();
         if (!target)
         {
             handler->SendSysMessage(LANG_NO_CHAR_SELECTED);
@@ -98,7 +98,7 @@ public:
             (ChatHandler(handler->GetSession())).PSendSysMessage("Character created with premium level %u.", premiumLevel);
         else
         {
-            (ChatHandler(handler->GetSession())).PSendSysMessage("%s already has a premium level. Please remove first.", playerName);
+            (ChatHandler(handler->GetSession())).PSendSysMessage("%s already has a premium level. Please remove first.", playerName.c_str());
             handler->SetSentErrorMessage(true);
             return false;
         }
@@ -109,7 +109,7 @@ public:
     static bool HandlePremiumCharacterDeleteCommand(ChatHandler* handler, const char* /*args*/)
     {
         Player* target = handler->getSelectedPlayer();
-        string playerName = target->GetName().c_str();
+        std::string playerName = target->GetName().c_str();
         if (!target)
         {
             (ChatHandler(handler->GetSession())).PSendSysMessage(LANG_NO_CHAR_SELECTED);
@@ -125,7 +125,7 @@ public:
             (ChatHandler(handler->GetSession())).PSendSysMessage("Premium character deleted.");
         else
         {
-            (ChatHandler(handler->GetSession())).PSendSysMessage("No premium level assigned to %s.", playerName);
+            (ChatHandler(handler->GetSession())).PSendSysMessage("No premium level assigned to %s.", playerName.c_str());
             handler->SetSentErrorMessage(true);
             return false;
         }
@@ -136,7 +136,7 @@ public:
     static bool HandlePremiumAccountInfoCommand(ChatHandler* handler, const char* /*args*/)
     {
         Player* target = handler->getSelectedPlayer();
-        string playerName = target->GetName().c_str();
+        std::string playerName = target->GetName().c_str();
         if (!target)
         {
             (ChatHandler(handler->GetSession())).PSendSysMessage(LANG_NO_CHAR_SELECTED);
@@ -151,12 +151,12 @@ public:
         int premium_level = GetAccountPremiumLevel(accountID);
         if (!premium_level)
         {
-            (ChatHandler(handler->GetSession())).PSendSysMessage("%s's account doesn't have premium level.", playerName);
+            (ChatHandler(handler->GetSession())).PSendSysMessage("%s's account doesn't have premium level.", playerName.c_str());
             handler->SetSentErrorMessage(true);
             return false;
         }
         else
-            (ChatHandler(handler->GetSession())).PSendSysMessage("%s's account premium level: %u", playerName, premium_level);
+            (ChatHandler(handler->GetSession())).PSendSysMessage("%s's account premium level: %u", playerName.c_str(), premium_level);
 
         return true;
     }
@@ -170,7 +170,7 @@ public:
         int premiumLevel = atoi((char*)args);
 
         Player* target = handler->getSelectedPlayer();
-        string playerName = target->GetName().c_str();
+        std::string playerName = target->GetName().c_str();
         if (!target)
         {
             handler->SendSysMessage(LANG_NO_CHAR_SELECTED);
@@ -185,10 +185,10 @@ public:
 
         bool characterPremiumLevelAdded = CreateAccountPremiumLevel(accountID, premiumLevel);
         if (characterPremiumLevelAdded)
-            (ChatHandler(handler->GetSession())).PSendSysMessage("%s's account premium level set to: %u", playerName, premiumLevel);
+            (ChatHandler(handler->GetSession())).PSendSysMessage("%s's account premium level set to: %u", playerName.c_str(), premiumLevel);
         else
         {
-            (ChatHandler(handler->GetSession())).PSendSysMessage("%s's account already has a premium level. Remove first.", playerName);
+            (ChatHandler(handler->GetSession())).PSendSysMessage("%s's account already has a premium level. Remove first.", playerName.c_str());
             handler->SetSentErrorMessage(true);
             return false;
         }
@@ -199,7 +199,7 @@ public:
     static bool HandlePremiumAccountDeleteCommand(ChatHandler* handler, const char* /*args*/)
     {
         Player* target = handler->getSelectedPlayer();
-        string playerName = target->GetName().c_str();
+        std::string playerName = target->GetName().c_str();
         if (!target)
         {
             (ChatHandler(handler->GetSession())).PSendSysMessage(LANG_NO_CHAR_SELECTED);
@@ -214,10 +214,10 @@ public:
 
         bool characterPremiumDeleted = DeleteAccountPremiumLevel(accountID);
         if (characterPremiumDeleted)
-            (ChatHandler(handler->GetSession())).PSendSysMessage("%s's Premium account deleted", playerName);
+            (ChatHandler(handler->GetSession())).PSendSysMessage("%s's Premium account deleted", playerName.c_str());
         else
         {
-            (ChatHandler(handler->GetSession())).PSendSysMessage("No premium level assigned to %s's account.", playerName);
+            (ChatHandler(handler->GetSession())).PSendSysMessage("No premium level assigned to %s's account.", playerName.c_str());
             handler->SetSentErrorMessage(true);
             return false;
         }
