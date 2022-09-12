@@ -232,12 +232,12 @@ public:
      */
     static int8 GetCharacterPremiumLevel(ObjectGuid guid)
     {
-        QueryResult result = CharacterDatabase.PQuery("SELECT premium_level FROM premium_character WHERE character_id = %i", guid.GetCounter());
+        QueryResult result = CharacterDatabase.Query("SELECT premium_level FROM premium_character WHERE character_id = %i", guid.GetCounter());
 
         if (!result)
             return 0;
 
-        int8 premium_level = (*result)[0].GetInt8();
+        int8 premium_level = (*result)[0].Get<uint8>();
         return premium_level;
     }
 
@@ -249,7 +249,7 @@ public:
 
         if (!hasPremiumLevel)
         {
-            CharacterDatabase.PQuery("INSERT INTO premium_character (character_id, premium_level) VALUES (%i, %i)", guid.GetCounter(), premiumLevel);
+            CharacterDatabase.Query("INSERT INTO premium_character (character_id, premium_level) VALUES (%i, %i)", guid.GetCounter(), premiumLevel);
             hasPremiumLevel = GetCharacterPremiumLevel(guid);
             if (!hasPremiumLevel)
                 return false;
@@ -267,7 +267,7 @@ public:
 
         if (hasPremiumLevel)
         {
-            CharacterDatabase.PQuery("DELETE FROM premium_character WHERE character_id = %i", guid.GetCounter());
+            CharacterDatabase.Query("DELETE FROM premium_character WHERE character_id = %i", guid.GetCounter());
             int hasPremiumLevel = GetCharacterPremiumLevel(guid);
             if (!hasPremiumLevel)
                 return true;
@@ -280,12 +280,12 @@ public:
 
     static int8 GetAccountPremiumLevel(uint64 accountID)
     {
-        QueryResult result = LoginDatabase.PQuery("SELECT premium_level FROM premium_account WHERE account_id = %i", accountID);
+        QueryResult result = LoginDatabase.Query("SELECT premium_level FROM premium_account WHERE account_id = %i", accountID);
 
         if (!result)
             return false;
 
-        int8 account_premium_level = (*result)[0].GetInt8();
+        int8 account_premium_level = (*result)[0].Get<uint8>();
         return account_premium_level;
     }
 
@@ -296,7 +296,7 @@ public:
 
         if (!hasPremiumLevel)
         {
-            LoginDatabase.PQuery("INSERT INTO premium_account (account_id, premium_level) VALUES (%i, %i)", accountID, premiumLevel);
+            LoginDatabase.Query("INSERT INTO premium_account (account_id, premium_level) VALUES (%i, %i)", accountID, premiumLevel);
             hasPremiumLevel = GetAccountPremiumLevel(accountID);
 
             if (!hasPremiumLevel)
@@ -314,7 +314,7 @@ public:
         int hasPremiumLevel = GetAccountPremiumLevel(accountID);
         if (hasPremiumLevel)
         {
-            LoginDatabase.PQuery("DELETE FROM premium_account WHERE account_id = %i", accountID);
+            LoginDatabase.Query("DELETE FROM premium_account WHERE account_id = %i", accountID);
             hasPremiumLevel = GetAccountPremiumLevel(accountID);
             if (!hasPremiumLevel)
                 return true;
